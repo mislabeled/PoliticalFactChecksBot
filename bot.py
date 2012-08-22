@@ -4,6 +4,7 @@ Created on Aug 21, 2012
 
 import reddit
 import feedparser
+import sqlite3
 
 SUBREDDIT = 'PoliticalFactChecks'
 USERNAME = 'PoliticalFactChecks'
@@ -13,26 +14,35 @@ TRUTH_O_METER_RSS = 'http://www.politifact.com/feeds/articles/truth-o-meter/'
 FACT_CHECK_ORG_RSS = 'http://factcheck.org/feed/rss/'
 WAPO_FACT_CHECKER = 'http://feeds.washingtonpost.com/rss/rss_fact-checker'
 
+conn = sqlite3.connect('db/PoliticalFactChecks.db')
+c = conn.cursor()
+
 class Submission:
-    def __init__(self, source, guid, title, link, description):
-        self.source = source
+    def __init__(self, source_name, url, guid, title, link, description):
+        self.source_name = source_name
+        self.url = url
         self.guid = guid
         self.title = title
         self.link = link
         self.description = description
 
     def get_title(self):
-        return "[%s] %s" % (self.source, self.title)
+        return "[%s] %s" % (self.source_name, self.title)
     
     def get_text(self):
         return self.description
         
 
-def already_been_posted(source, guid):
-    # TODO: implement this
+def already_been_posted(url, guid):
+    c.execute('select id from submission where url = ? and guid = ? limit 1', (url, guid))
+    result = c.fetchone()
+    if result != None and result[0] > 0:
+        return True
+    c.execute("insert into submission(url, guid) values ('%s', '%s')" % (url, guid))
+    conn.commit()
     return False
 
-def get_submissions(source, url):
+def get_submissions(source_name, url):
     submissions = []
     truth_o_meter_feed = feedparser.parse(url)
     for entry in truth_o_meter_feed.entries:
@@ -41,7 +51,7 @@ def get_submissions(source, url):
         link = entry['link']
         description = entry['description']
         if not already_been_posted(url, guid):
-            submissions.append(Submission(source, guid, title, link, description))
+            submissions.append(Submission(source_name, url, guid, title, link, description))
     return submissions
             
 
