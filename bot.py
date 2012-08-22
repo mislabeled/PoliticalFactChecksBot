@@ -14,14 +14,15 @@ FACT_CHECK_ORG_RSS = 'http://factcheck.org/feed/rss/'
 WAPO_FACT_CHECKER = 'http://feeds.washingtonpost.com/rss/rss_fact-checker'
 
 class Submission:
-    def __init__(self, guid, title, link, description):
+    def __init__(self, source, guid, title, link, description):
+        self.source = source
         self.guid = guid
         self.title = title
         self.link = link
         self.description = description
 
     def get_title(self):
-        return self.title
+        return "[%s] %s" % (self.source, self.title)
     
     def get_text(self):
         return self.description
@@ -31,7 +32,7 @@ def already_been_posted(source, guid):
     # TODO: implement this
     return False
 
-def get_submissions(url):
+def get_submissions(source, url):
     submissions = []
     truth_o_meter_feed = feedparser.parse(url)
     for entry in truth_o_meter_feed.entries:
@@ -40,18 +41,18 @@ def get_submissions(url):
         link = entry['link']
         description = entry['description']
         if not already_been_posted(url, guid):
-            submissions.append(Submission(guid, title, link, description))
+            submissions.append(Submission(source, guid, title, link, description))
     return submissions
             
 
 def get_politifact_submissions():
-    return get_submissions(TRUTH_O_METER_RSS)
+    return get_submissions("Politifact", TRUTH_O_METER_RSS)
 
 def get_factcheckorg_submissions():
-    return get_submissions(FACT_CHECK_ORG_RSS)
+    return get_submissions("FactCheck.org", FACT_CHECK_ORG_RSS)
 
 def get_wapofactchecker_submissions():
-    return get_submissions(WAPO_FACT_CHECKER)
+    return get_submissions("WaPo", WAPO_FACT_CHECKER)
 
 def run():
     r = reddit.Reddit(user_agent=USER_AGENT)
