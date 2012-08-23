@@ -5,12 +5,13 @@ Created on Aug 21, 2012
 import reddit
 import feedparser
 import sqlite3
+from BeautifulSoup import BeautifulSoup
 
 SUBREDDIT = 'PoliticalFactChecks'
 USERNAME = 'PoliticalFactChecks'
 PASSWORD = 'notreallythepassword'
 USER_AGENT = 'PoliticalFactChecksBot/0'
-TRUTH_O_METER_RSS = 'http://www.politifact.com/feeds/articles/truth-o-meter/'
+TRUTH_O_METER_RSS = 'http://www.politifact.com/feeds/statements/truth-o-meter/'
 FACT_CHECK_ORG_RSS = 'http://factcheck.org/feed/rss/'
 WAPO_FACT_CHECKER = 'http://feeds.washingtonpost.com/rss/rss_fact-checker'
 
@@ -26,13 +27,25 @@ class Submission:
         self.link = link
         self.description = description
 
+    def get_source_name(self):
+        return self.source_name
+
     def get_title(self):
-        return "[%s] %s" % (self.source_name, self.title)
+        clean_title = self.title.replace('&quot;', '"')
+        clean_title = clean_title.replace('\n', '')
+        clean_title = clean_title.replace('\t', '')
+        return "[%s] %s" % (self.source_name, clean_title)
     
     def get_text(self):
-        return self.description
-        
+        return "%s\n\n%s" % (_clean_tags(self.description), self.get_link())
+    
+    def get_link(self):
+        return '[Read More](%s)' % self.link
 
+def _clean_tags(code):
+    # TODO: clean HTML entities
+    return ''.join(BeautifulSoup(code).findAll(text=True)).replace('... >> More', '').replace('&#8230; More >>', '')
+    
 def already_been_posted(url, guid):
     c.execute('select id from submission where url = ? and guid = ? limit 1', (url, guid))
     result = c.fetchone()
