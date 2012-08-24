@@ -9,7 +9,6 @@ from BeautifulSoup import BeautifulSoup
 
 SUBREDDIT = 'PoliticalFactChecks'
 USERNAME = 'PoliticalFactChecks'
-PASSWORD = 'notreallythepassword'
 USER_AGENT = 'PoliticalFactChecksBot/0'
 TRUTH_O_METER_RSS = 'http://www.politifact.com/feeds/statements/truth-o-meter/'
 FACT_CHECK_ORG_RSS = 'http://factcheck.org/feed/rss/'
@@ -32,6 +31,7 @@ class Submission:
 
     def get_title(self):
         clean_title = self.title.replace('&quot;', '"')
+        clean_title = clean_title.replace('&rsquo;', "'")
         clean_title = clean_title.replace('\n', '')
         clean_title = clean_title.replace('\t', '')
         return "[%s] %s" % (self.source_name, clean_title)
@@ -44,7 +44,7 @@ class Submission:
 
 def _clean_tags(code):
     # TODO: clean HTML entities
-    return ''.join(BeautifulSoup(code).findAll(text=True)).replace('... >> More', '').replace('&#8230; More >>', '')
+    return ''.join(BeautifulSoup(code).findAll(text=True)).replace('... >> More', '').replace('&#8230; More >>', '').replace('&amp;', '&')
     
 def already_been_posted(url, guid):
     c.execute('select id from submission where url = ? and guid = ? limit 1', (url, guid))
@@ -77,9 +77,13 @@ def get_factcheckorg_submissions():
 def get_wapofactchecker_submissions():
     return get_submissions("WaPo", WAPO_FACT_CHECKER)
 
+
+def read_password_from_file():
+    return open('password.txt').read()
+    
 def run():
     r = reddit.Reddit(user_agent=USER_AGENT)
-    r.login(USERNAME, PASSWORD)
+    r.login(USERNAME, read_password_from_file())
     
     submissions = []
     submissions.extend(get_politifact_submissions())
