@@ -30,21 +30,19 @@ class Submission:
         return self.source_name
 
     def get_title(self):
-        clean_title = self.title.replace('&quot;', '"')
-        clean_title = clean_title.replace('&rsquo;', "'")
-        clean_title = clean_title.replace('\n', '')
-        clean_title = clean_title.replace('\t', '')
-        return "[%s] %s" % (self.source_name, clean_title)
+        return "[%s] %s" % (self.source_name, self._get_clean_title())
     
     def get_text(self):
-        return "%s\n\n%s" % (_clean_tags(self.description), self.get_link())
+        return "%s\n\n%s" % (self._get_clean_text(), self.get_link())
     
     def get_link(self):
         return '[Read More](%s)' % self.link
 
-def _clean_tags(code):
-    # TODO: clean HTML entities
-    return ''.join(BeautifulSoup(code).findAll(text=True)).replace('... >> More', '').replace('&#8230; More >>', '').replace('&amp;', '&')
+    def _get_clean_title(self):
+        return ''.join(BeautifulSoup(self.title).findAll(text=True)).replace('&quot;', '"').replace('&rsquo;', "'").replace('\n', '').replace('\t', '')
+        
+    def _get_clean_text(self):
+        return ''.join(BeautifulSoup(self.description).findAll(text=True)).replace('... >> More', '').replace('&#8230; More >>', '').replace('&amp;', '&')
     
 def already_been_posted(url, guid):
     c.execute('select id from submission where url = ? and guid = ? limit 1', (url, guid))
