@@ -28,6 +28,12 @@ class Submission:
 
     def get_source_name(self):
         return self.source_name
+    
+    def get_url(self):
+        return self.url
+    
+    def get_guid(self):
+        return self.guid
 
     def get_title(self):
         return "[%s] %s" % (self.source_name, self._get_clean_title())
@@ -49,9 +55,11 @@ def already_been_posted(url, guid):
     result = c.fetchone()
     if result != None and result[0] > 0:
         return True
+    return False
+
+def set_posted(url, guid):
     c.execute("insert into submission(url, guid) values ('%s', '%s')" % (url, guid))
     conn.commit()
-    return False
 
 def get_submissions(source_name, url):
     submissions = []
@@ -90,6 +98,7 @@ def run():
     
     for submission in submissions:
         r.submit(SUBREDDIT, submission.get_title(), submission.get_text())
+        set_posted(submission.get_url(), submission.get_guid())
 
 if __name__ == '__main__':
     run()
