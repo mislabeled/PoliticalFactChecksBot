@@ -2,6 +2,7 @@
 Created on Aug 21, 2012
 '''
 
+import sys
 import reddit
 import feedparser
 import sqlite3
@@ -87,7 +88,7 @@ def get_wapofactchecker_submissions():
 def read_password_from_file():
     return open('password.txt').read()
     
-def run():
+def main():
     r = reddit.Reddit(user_agent=USER_AGENT)
     r.login(USERNAME, read_password_from_file())
     
@@ -100,5 +101,7 @@ def run():
         r.submit(SUBREDDIT, submission.get_title(), submission.get_text())
         set_posted(submission.get_url(), submission.get_guid())
 
+    return 0
+
 if __name__ == '__main__':
-    run()
+    sys.exit(main())
