@@ -48,7 +48,7 @@ class Submission:
         return ''.join(BeautifulSoup(self.title).findAll(text=True)).replace('&quot;', '"').replace('&rsquo;', "'").replace('\n', '').replace('\t', '')
         
     def _get_clean_text(self):
-        return ''.join(BeautifulSoup(self.description).findAll(text=True)).replace('... >> More', '').replace('&#8230; More >>', '').replace('&amp;', '&')
+        return ''.join(BeautifulSoup(self.description).findAll(text=True)).replace('... >> More', '').replace('&#8230; More >>', '').replace('Read full article  &gt;&gt;', '').replace('&amp;', '&')
     
 def already_been_posted(url, guid):
     c.execute('select id from submission where url = ? and guid = ? limit 1', (url, guid))
@@ -94,7 +94,7 @@ def run():
     submissions = []
     submissions.extend(get_politifact_submissions())
     submissions.extend(get_factcheckorg_submissions())
-    #submissions.extend(get_wapofactchecker_submissions())
+    submissions.extend(get_wapofactchecker_submissions())
     
     for submission in submissions:
         r.submit(SUBREDDIT, submission.get_title(), submission.get_text())
