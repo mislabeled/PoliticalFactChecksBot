@@ -46,7 +46,7 @@ class Submission:
         return '[Read More](%s)' % self.link
 
     def _get_clean_title(self):
-        return ''.join(BeautifulSoup(self.title).findAll(text=True)).replace('&quot;', '"').replace('&rsquo;', "'").replace('\n', '').replace('\t', '').replace('&nbsp;', ' ')
+        return ''.join(BeautifulSoup(self.title).findAll(text=True)).replace('&quot;', '"').replace('&rsquo;', "'").replace('&lsquo;', "'").replace('\n', '').replace('\t', '').replace('&nbsp;', ' ')
         
     def _get_clean_text(self):
         return ''.join(BeautifulSoup(self.description).findAll(text=True)).replace('... >> More', '').replace('&#8230; More >>', '').replace('Read full article  &gt;&gt;', '').replace('&amp;', '&')
