@@ -83,11 +83,9 @@ class Submission:
     
     def _getWashingtonPostVerdict(self):
         """ look for images on full page: pinocchio_1.jpg, pinocchio_2.jpg, pinocchio_3.jpg, or pinocchio_4.jpg """
-        verdicts = []
         soup = BeautifulSoup(urllib2.urlopen(self.link))
         image_src_list = [image['src'] for image in soup.findAll('img', attrs={'src' : re.compile('pinocchio_(\d)\.jpg')})]
-        for img_src in image_src_list:
-            verdicts.append(self._getPinocchioText(re.search('pinocchio_(\d)\.jpg', img_src).group(1)))
+        verdicts = [self._getPinocchioText(re.search('pinocchio_(\d)\.jpg', img_src).group(1)) for img_src in image_src_list]
         if len(verdicts) > 0:
             return ', '.join(verdicts)
         return None
