@@ -3,6 +3,8 @@ Created on Aug 21, 2012
 '''
 
 import sys
+import re
+import urllib2
 import reddit
 import feedparser
 import sqlite3
@@ -14,6 +16,10 @@ USER_AGENT = 'PoliticalFactChecksBot/0'
 TRUTH_O_METER_RSS = 'http://www.politifact.com/feeds/statements/truth-o-meter/'
 FACT_CHECK_ORG_RSS = 'http://factcheck.org/feed/rss/'
 WAPO_FACT_CHECKER = 'http://feeds.washingtonpost.com/rss/rss_fact-checker'
+
+SOURCE_POLITIFACT = 'Politifact'
+SOURCE_FACTCHECK_ORG = 'FactCheck.org'
+SOURCE_WAPO = 'WaPo'
 
 conn = sqlite3.connect('db/PoliticalFactChecks.db')
 c = conn.cursor()
@@ -37,7 +43,10 @@ class Submission:
         return self.guid
 
     def get_title(self):
-        return "[%s] %s" % (self.source_name, self._get_clean_title())
+        verdict = self.get_verdict()
+        if verdict == None:
+            return "[%s] %s" % (self.source_name, self._get_clean_title())
+        return "[%s] %s [%s]" % (self.source_name, self._get_clean_title(), verdict)
     
     def get_text(self):
         return "%s\n\n%s" % (self._get_clean_text(), self.get_link())
@@ -50,6 +59,45 @@ class Submission:
         
     def _get_clean_text(self):
         return ''.join(BeautifulSoup(self.description).findAll(text=True)).replace('... >> More', '').replace('&#8230; More >>', '').replace('Read full article  &gt;&gt;', '').replace('&amp;', '&')
+    
+    def get_verdict(self):
+        if self.source_name == SOURCE_POLITIFACT:
+            return self._getPolitifactVerdict()
+        elif self.source_name == SOURCE_FACTCHECK_ORG:
+            return self._getFactcheckOrgVerdict()
+        elif self.source_name == SOURCE_WAPO:
+            return self._getWashingtonPostVerdict()
+        return None
+    
+    def _getPolitifactVerdict(self):
+        """ read first few words from description: 'The Truth-o-Meter says: Half-True' """
+        if self.description.startswith('The Truth-o-Meter says:'):
+            desc_split = self.description.split('|')
+            if len(desc_split) > 0:
+                return desc_split[0].replace('The Truth-o-Meter says:', '').strip()
+        return None
+    
+    def _getFactcheckOrgVerdict(self):
+        # TODO: looking for some consistent scheme
+        return None
+    
+    def _getWashingtonPostVerdict(self):
+        """ look for images on full page: pinocchio_1.jpg, pinocchio_2.jpg, pinocchio_3.jpg, or pinocchio_4.jpg """
+        verdicts = []
+        soup = BeautifulSoup(urllib2.urlopen(self.link))
+        image_src_list = [image["src"] for image in soup.findAll("img")]
+        for img_src in image_src_list:
+            m = re.search('pinocchio_(\d)\.jpg', img_src)
+            if m != None:
+                verdicts.append(self._getPinocchioText(m.group(1)))
+        if len(verdicts) > 0:
+            return ', '.join(verdicts)
+        return None
+    
+    def _getPinocchioText(self, nose_count):
+        if nose_count == '1':
+            return '%s Pinocchio' % nose_count
+        return '%s Pinocchios' % nose_count
     
 def already_been_posted(url, guid):
     c.execute('select id from submission where url = ? and guid = ? limit 1', (url, guid))
@@ -76,13 +124,13 @@ def get_submissions(source_name, url):
             
 
 def get_politifact_submissions():
-    return get_submissions("Politifact", TRUTH_O_METER_RSS)
+    return get_submissions(SOURCE_POLITIFACT, TRUTH_O_METER_RSS)
 
 def get_factcheckorg_submissions():
-    return get_submissions("FactCheck.org", FACT_CHECK_ORG_RSS)
+    return get_submissions(SOURCE_FACTCHECK_ORG, FACT_CHECK_ORG_RSS)
 
 def get_wapofactchecker_submissions():
-    return get_submissions("WaPo", WAPO_FACT_CHECKER)
+    return get_submissions(SOURCE_WAPO, WAPO_FACT_CHECKER)
 
 
 def read_password_from_file():
